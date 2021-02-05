@@ -6,7 +6,7 @@ from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
 from odoo.tools import float_compare, float_round
 
-LIMIT_OF_FILM_COMPONENTS = 2
+LIMIT_OF_FILM_COMPONENTS = 2 #todo should you not put this in the Odoo system parameters? This way it could be configurable?
 
 class MrpBom(models.Model):
     _name = 'mrp.bom'
@@ -15,7 +15,7 @@ class MrpBom(models.Model):
     def _default_units_uom_id(self):
         uom = self.env.ref('uom.product_uom_unit', raise_if_not_found=False)
         if not uom:
-            categ = self.env.ref('uom.product_uom_categ_unit')
+            categ = self.env.ref('uom.product_uom_categ_unit') #todo If the categ has been deleted the next line will crash on categ.id
             uom = self.env['uom.uom'].search([('category_id', '=', categ.id), ('uom_type', '=', 'reference')], limit=1)
         return uom
 
@@ -109,7 +109,7 @@ class MrpBom(models.Model):
     production_bom_ids = fields.One2many('mrp.bom', 'recipe_bom_id', string='Production BoMs', readonly=True, domain=[('type', '=', 'normal')])  # only recipes have production BoMs
     alt_bom_line_ids = fields.One2many('mrp.bom.line', 'alt_bom_id', string='Alternative BoM Lines', help='Alternative recipe lines')  # it is not possible to use bom_line_ids field for alternative components
     ##############
-    # M2o fields #
+    # M2o fields #00
     ##############
     # -> packaging requirement
     packaging_bom_id = fields.Many2one('mrp.bom', string='Packaging Instructions', related='product_tmpl_id.packaging_bom_id', store=True, readonly=False, domain=[('type', '=', 'packaging')])
@@ -226,12 +226,12 @@ class MrpBom(models.Model):
         for bom in self:
             if bom.film_type_bom in ['extruded', 'laminated']:
                 # retrieve quantity to produce in kg
-                kg_uom = self.env.ref('uom.product_uom_kgm')
+                kg_uom = self.env.ref('uom.product_uom_kgm') #todo you should block the deletion of this record -> if deleted the following code will crash
                 custom_uom_related_to_kgs = self.env['uom.uom'].search([('category_id', '=', bom.product_uom_id.category_id.id), ('related_uom_id', '=', kg_uom.id)], limit=1)
                 qty_to_produce_in_kgs = bom.product_uom_id._compute_quantity(bom.product_qty, custom_uom_related_to_kgs) if custom_uom_related_to_kgs else 0.0
                 qty_to_produce_in_kgs += bom.waste_qty_in_kg
                 # retrieve quantity to produce in units
-                units_uom = self.env.ref('uom.product_uom_unit')
+                units_uom = self.env.ref('uom.product_uom_unit') #todo same here
                 custom_uom_related_to_units = self.env['uom.uom'].search([('category_id', '=', bom.product_uom_id.category_id.id), ('related_uom_id', '=', units_uom.id)], limit=1)
                 qty_to_produce_in_units = custom_uom_related_to_kgs._compute_quantity(qty_to_produce_in_kgs, custom_uom_related_to_units) if custom_uom_related_to_kgs and custom_uom_related_to_units else 0.0
 
@@ -275,7 +275,7 @@ class MrpBom(models.Model):
         for bom in self:
             if bom.waste_management_enabled and bom.film_type_bom in ['extruded', 'laminated', 'glued']:
                 # retrieve quantity to produce in kg
-                kg_uom = self.env.ref('uom.product_uom_kgm')
+                kg_uom = self.env.ref('uom.product_uom_kgm') #todo same here what if this uom have been deleted?
                 custom_uom_related_to_kgs = self.env['uom.uom'].search([('category_id', '=', bom.product_uom_id.category_id.id), ('related_uom_id', '=', kg_uom.id)], limit=1)
                 qty_to_produce_in_kgs = bom.product_uom_id._compute_quantity(bom.product_qty, custom_uom_related_to_kgs) if custom_uom_related_to_kgs else 0.0
                 waste_qty_in_kgs = 0.0
@@ -298,7 +298,7 @@ class MrpBom(models.Model):
                 # compute border waste quantity
                 border_waste_qty_in_kg = 0.0
                 for component in bom.bom_line_ids.filtered(lambda line: line.is_film_component):
-                    meters_uom = self.env.ref('uom.product_uom_meter')
+                    meters_uom = self.env.ref('uom.product_uom_meter')# todo
                     custom_uom_related_to_meters = self.env['uom.uom'].search([('category_id', '=', bom.product_uom_id.category_id.id), ('related_uom_id', '=', meters_uom.id)], limit=1)
                     qty_to_produce_in_meters = bom.product_uom_id._compute_quantity(bom.product_qty, custom_uom_related_to_meters)
                     stretched_qty_to_produce_in_meters = qty_to_produce_in_meters - (qty_to_produce_in_meters * component.stretching_factor)
@@ -416,7 +416,7 @@ class MrpBom(models.Model):
             # unlink packaging components linked to a packaging instructions line
             self.bom_line_ids.filtered(lambda l: l.packaging_bom_line_id).unlink()
             # retrieve quantity to produce in units
-            units_uom = self.env.ref('uom.product_uom_unit')
+            units_uom = self.env.ref('uom.product_uom_unit') # todo
             custom_uom_related_to_units = self.env['uom.uom'].search([('category_id', '=', self.product_uom_id.category_id.id), ('related_uom_id', '=', units_uom.id)], limit=1)
             qty_to_produce_in_units = self.product_uom_id._compute_quantity(self.product_qty, custom_uom_related_to_units) if custom_uom_related_to_units else 0.0
             # compute packaging factor (number of coil to produce / number of coil by pallet)
